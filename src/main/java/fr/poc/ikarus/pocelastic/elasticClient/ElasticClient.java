@@ -8,7 +8,9 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import fr.poc.ikarus.pocelastic.entity.Article;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
+import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.springframework.stereotype.Service;
 
@@ -25,8 +27,16 @@ public class ElasticClient {
     private ElasticsearchClient elasticsearchClient;
 
     public ElasticClient() {
-        String serverUrl = "https://localhost:9200";
-        RestClient restClient = RestClient.builder(HttpHost.create(serverUrl)).build();
+        String serverUrl = "http://localhost:9200";
+        RestClient restClient = RestClient
+                .builder(HttpHost.create(serverUrl))
+                .setDefaultHeaders(new Header[]{
+                        new BasicHeader("Athorization","ApiKey test")
+                })
+                /*.setDefaultHeaders(new Header[]{
+                        new BasicHeader("Authorization", "ApiKey " + "test")
+                })*/
+                .build();
         ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         this.elasticsearchClient = new ElasticsearchClient(transport);
     }
@@ -46,7 +56,8 @@ public class ElasticClient {
                                 .query(q->q
                                         .term(t->t
                                                 .field("titre")
-                                                .value(v->v.stringValue(titre))))
+                                                .value(v->v.stringValue("titre"))))
+                                                //.value(v->v.stringValue(titre))))
                         ,Article.class);
         List<Article> listeArticle = new ArrayList<>();
         for (Hit<Article> hit: search.hits().hits()) {
