@@ -7,8 +7,8 @@ import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,13 +22,14 @@ public class ArticleController {
 
     @Autowired
     private ElasticClient elasticClient ;
-    @GetMapping("/")
-    private ResponseEntity<List<Article>> getArticles(@PathParam("titre") String titre) throws IOException {
-        Article article = new Article("test","test",new ArrayList<>(),new Author("testo","testtt"));
-        elasticClient.addArticle(article);
-        System.out.println("HEHOOOO");
-//        return new ResponseEntity<>(null,HttpStatus.OK);
+    @GetMapping("/{titre}")
+    private ResponseEntity<List<Article>> getArticlesByTitle(@PathVariable("titre") String titre) throws IOException {
+        System.out.println("titre = "+titre);
         return new ResponseEntity<>(elasticClient.findArticleByTitle(titre), HttpStatus.OK);
 
     }
+    @GetMapping("/")
+    private ResponseEntity<List<Article>> getEveryArticle() throws IOException {
+        return new ResponseEntity<>(elasticClient.getAllArticles(),HttpStatus.OK);
+        }
 }

@@ -47,6 +47,7 @@ public class ElasticClient {
                 .id(article.getTitle())
                 .document(article)
         );
+        System.out.println("indexed with version : "+ indexResponse.version());
 
     }
     public List<Article> findArticleByTitle(String titre) throws IOException {
@@ -55,12 +56,24 @@ public class ElasticClient {
                 .index("article")
                                 .query(q->q
                                         .term(t->t
-                                                .field("titre")
-                                                .value(v->v.stringValue("titre"))))
-                                                //.value(v->v.stringValue(titre))))
+                                                .field("title")
+                                                .value(v-> v.stringValue(titre))))
                         ,Article.class);
+        System.out.println(" la recherche en toString donne : "+ search.toString());
+        //Sachant que j'ai un document avec le titre  "y a test", le document ressort quand je fais une recherche avec y, a et test mais pas avec y a test
+        //Ce qui laisse penser que je dois faire un enchainement de recherche de value => à voir 
         List<Article> listeArticle = new ArrayList<>();
         for (Hit<Article> hit: search.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
+            listeArticle.add(hit.source());
+        }
+        return listeArticle;
+    }
+    public List<Article> getAllArticles() throws IOException {
+        SearchResponse<Article> searchAllTest = elasticsearchClient.search(s->s.index("article"),Article.class);
+        List<Article> listeArticle = new ArrayList<>();
+        for (Hit<Article> hit: searchAllTest.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
             listeArticle.add(hit.source());
         }
         return listeArticle;
