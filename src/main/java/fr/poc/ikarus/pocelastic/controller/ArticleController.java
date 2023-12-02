@@ -31,5 +31,11 @@ public class ArticleController {
     @GetMapping("/")
     private ResponseEntity<List<Article>> getEveryArticle() throws IOException {
         return new ResponseEntity<>(elasticClient.getAllArticles(),HttpStatus.OK);
-        }
+    }
+    @GetMapping("/2/{titre}")
+    private ResponseEntity<List<Article>> getArticlesByTitle2(@PathVariable("titre") String titre) throws IOException {
+        System.out.println("titre = "+titre);
+        return new ResponseEntity<>(elasticClient.findArticleByTitleV2(titre), HttpStatus.OK);
+
+    }
 }

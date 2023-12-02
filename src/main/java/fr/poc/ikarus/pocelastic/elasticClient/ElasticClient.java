@@ -4,6 +4,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.TotalHits;
+import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -13,6 +15,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,7 +64,7 @@ public class ElasticClient {
                         ,Article.class);
         System.out.println(" la recherche en toString donne : "+ search.toString());
         //Sachant que j'ai un document avec le titre  "y a test", le document ressort quand je fais une recherche avec y, a et test mais pas avec y a test
-        //Ce qui laisse penser que je dois faire un enchainement de recherche de value => à voir 
+        //Ce qui laisse penser que je dois faire un enchainement de recherche de value => à voir
         List<Article> listeArticle = new ArrayList<>();
         for (Hit<Article> hit: search.hits().hits()) {
             System.out.println(" élément que j'ai obtenue : "+ hit.source());
@@ -75,6 +78,36 @@ public class ElasticClient {
         for (Hit<Article> hit: searchAllTest.hits().hits()) {
             System.out.println(" élément que j'ai obtenue : "+ hit.source());
             listeArticle.add(hit.source());
+        }
+        return listeArticle;
+    }
+    public List<Article> findArticleByTitleV2(String titre) throws IOException {
+        // il faudrais découper le string avec les espaces
+        String[] testList = StringUtils.delimitedListToStringArray(titre," ");
+
+        SearchResponse<Article> search = elasticsearchClient
+                .search(s->s
+                                .index("article")
+                                .query(q->q
+                                        .term(t->{
+                                            for (String str: testList) {
+                                                System.out.println("j'ajoute cette string : "+str);
+                                                if(str!=null&&!str.isEmpty()){
+                                                    t.field("title").value(str);
+                                                }
+                                            }
+                                            return t;
+                                        }))
+                        ,Article.class);
+        System.out.println(" la recherche en toString donne : "+ search.toString());
+        List<Article> listeArticle = new ArrayList<>();
+        TotalHits total = search.hits().total();
+        boolean isExactResult = total.relation() == TotalHitsRelation.Eq;
+        System.out.println("j'obtiens ce boolean pour exact result : "+isExactResult+" en prime je souhaite print ce que total.relation me renvoie "+ total.relation());
+        for (Hit<Article> hit: search.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
+            listeArticle.add(hit.source());
+            System.out.println("hitscore de cet élément : "+hit.score().toString());
         }
         return listeArticle;
     }
