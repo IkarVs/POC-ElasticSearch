@@ -1,5 +1,6 @@
 package fr.poc.ikarus.pocelastic.controller;
 
+import fr.poc.ikarus.pocelastic.dto.ArticleDto;
 import fr.poc.ikarus.pocelastic.elasticClient.ElasticClient;
 import fr.poc.ikarus.pocelastic.entity.Article;
 import fr.poc.ikarus.pocelastic.entity.Author;
@@ -22,6 +23,7 @@ public class ArticleController {
 
     @Autowired
     private ElasticClient elasticClient ;
+    
     @GetMapping("/{titre}")
     private ResponseEntity<List<Article>> getArticlesByTitle(@PathVariable("titre") String titre) throws IOException {
         System.out.println("titre = "+titre);
@@ -33,7 +35,7 @@ public class ArticleController {
         return new ResponseEntity<>(elasticClient.getAllArticles(),HttpStatus.OK);
     }
     @GetMapping("/2/{titre}")
-    private ResponseEntity<List<Article>> getArticlesByTitle2(@PathVariable("titre") String titre) throws IOException {
+    private ResponseEntity<List<ArticleDto>> getArticlesByTitle2(@PathVariable("titre") String titre) throws IOException {
         System.out.println("titre = "+titre);
         return new ResponseEntity<>(elasticClient.findArticleByTitleV2(titre), HttpStatus.OK);
 
