@@ -109,5 +109,35 @@ public class ElasticClient {
         }
         return articleDtoList;
     }
+    public List<ArticleDto> findArticleByText(String texte) throws IOException {
+        // il faudrais découper le string avec les espaces
+        String[] testList = StringUtils.delimitedListToStringArray(texte," ");
+
+        SearchResponse<Article> search = elasticsearchClient
+                .search(s->s
+                                .index("article")
+                                .query(q->q
+                                        .term(t->{
+                                            for (String str: testList) {
+                                                System.out.println("j'ajoute cette string : "+str);
+                                                if(str!=null&&!str.isEmpty()){
+                                                    t.field("texte").value(str);
+                                                }
+                                            }
+                                            return t;
+                                        }))
+                        ,Article.class);
+        System.out.println(" la recherche en toString donne : "+ search.toString());
+        TotalHits total = search.hits().total();
+        List<ArticleDto> articleDtoList = new ArrayList<>();
+        boolean isExactResult = total.relation() == TotalHitsRelation.Eq;
+        System.out.println("j'obtiens ce boolean pour exact result : "+isExactResult+" en prime je souhaite print ce que total.relation me renvoie "+ total.relation());
+        for (Hit<Article> hit: search.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
+            ArticleDto articleDto = new ArticleDto(hit.source(),hit.score());
+            articleDtoList.add(articleDto );
+        }
+        return articleDtoList;
+    }
 
 }
