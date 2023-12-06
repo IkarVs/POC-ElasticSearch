@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -94,10 +95,7 @@ public class ElasticClient {
                                             return t;
                                         }))
                         ,Article.class);
-        TotalHits total = search.hits().total();
         List<ArticleDto> articleDtoList = new ArrayList<>();
-        boolean isExactResult = total.relation() == TotalHitsRelation.Eq;
-        System.out.println("j'obtiens ce boolean pour exact result : "+isExactResult+" en prime je souhaite print ce que total.relation me renvoie "+ total.relation());
         for (Hit<Article> hit: search.hits().hits()) {
             System.out.println(" élément que j'ai obtenue : "+ hit.source());
             ArticleDto articleDto = new ArticleDto(hit.source(),hit.score());
@@ -163,9 +161,6 @@ public class ElasticClient {
                                 .index("article")
                                 .query(q->{
                                     q.bool(b->b.must(test));
-
-                                    //q.match(matchQueryText);
-                                    //q.match(matchQueryTitle);
                                 return q;})
                         ,Article.class);
         TotalHits total = search.hits().total();
@@ -177,5 +172,40 @@ public class ElasticClient {
         }
         return articleDtoList;
     }
+    public List<ArticleDto> findArticleByTagandTitle(String texte,String[] title) throws IOException {
+        Query matchQueryText = new MatchQuery.Builder().field("texte").query(texte).build()._toQuery();
+        List<Query> test = new ArrayList<>();
+        for (String str: title
+             ) {
+            Query matchQueryTags = new MatchQuery.Builder().field("tags").query(str).build()._toQuery();
+            test.add(matchQueryTags);
+        }
+        //Query matchQueryTags = new MatchQuery.Builder().field("tagd").query(title).build()._toQuery();
+        //Query matchQueryTitle = new MatchQuery.Builder().field("title").query(title).build()._toQuery();
+
+
+        test.add(matchQueryText);
+
+        SearchResponse<Article> search = elasticsearchClient
+                .search(s->s
+                                .index("article")
+                                .query(q->{
+                                    q.bool(b->b.must(test));
+                                    return q;})
+                        ,Article.class);
+        List<ArticleDto> articleDtoList = new ArrayList<>();
+        for (Hit<Article> hit: search.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
+            ArticleDto articleDto = new ArticleDto(hit.source(),hit.score());
+            articleDtoList.add(articleDto );
+        }
+        return articleDtoList;
+    }
+
+    public void deleteArticle(String titre) throws IOException {
+        DeleteRequest deleteRequest = DeleteRequest.of(t-> t.index("article").id(titre));
+        elasticsearchClient.delete(deleteRequest);
+    }
+
 
 }

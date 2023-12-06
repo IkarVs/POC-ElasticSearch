@@ -1,5 +1,6 @@
 package fr.poc.ikarus.pocelastic.controller;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import fr.poc.ikarus.pocelastic.dto.ArticleDto;
 import fr.poc.ikarus.pocelastic.elasticClient.ElasticClient;
 import fr.poc.ikarus.pocelastic.entity.Article;
@@ -32,16 +33,24 @@ public class ArticleController {
         elasticClient.addArticle(article);
         return new ResponseEntity<>("ajout réussi",HttpStatus.OK);
     }
+    @PostMapping("/adds")
+    private ResponseEntity<String> addArticles(@RequestBody List<Article> articles) throws IOException {
+
+        for (Article article:articles
+             ) {
+            System.out.println("j'ajoute cette article : "+article.toString());
+            elasticClient.addArticle(article);
+        }
+        return new ResponseEntity<>("ajout des documents réussi",HttpStatus.OK);
+    }
 
     @GetMapping("/{titre}")
     private ResponseEntity<List<Article>> getArticlesByTitle(@PathVariable("titre") String titre) throws IOException {
-        System.out.println("titre = "+titre);
         return new ResponseEntity<>(elasticClient.findArticleByMatchingTitle(titre), HttpStatus.OK);
 
     }
     @GetMapping("/2/{titre}")
     private ResponseEntity<List<ArticleDto>> getArticlesByTitle2(@PathVariable("titre") String titre) throws IOException {
-        System.out.println("titre = "+titre);
         return new ResponseEntity<>(elasticClient.findArticleByTitleV2(titre), HttpStatus.OK);
 
     }
@@ -65,6 +74,16 @@ public class ArticleController {
         System.out.println("texte = "+texte);
         return new ResponseEntity<>(elasticClient.findArticleByTextandTitle(texte,titre), HttpStatus.OK);
 
+    }
+    @GetMapping("/tagsandtags")
+        private ResponseEntity<List<ArticleDto>> getArticlesByTagesAndTitle(@RequestParam String titre,@RequestParam String[] tags) throws IOException {
+        return new ResponseEntity<>(elasticClient.findArticleByTagandTitle(titre,tags), HttpStatus.OK);
+
+    }
+    @DeleteMapping("/{titre}")
+    private ResponseEntity<String> deleteByTitle(@PathVariable String titre) throws IOException {
+        elasticClient.deleteArticle(titre);
+        return new ResponseEntity<>("document de titre "+titre+" supprimé",HttpStatus.OK);
     }
 
 }
