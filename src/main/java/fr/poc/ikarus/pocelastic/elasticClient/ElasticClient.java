@@ -1,6 +1,9 @@
 package fr.poc.ikarus.pocelastic.elasticClient;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -34,9 +37,6 @@ public class ElasticClient {
         String serverUrl = "http://localhost:9200";
         RestClient restClient = RestClient
                 .builder(HttpHost.create(serverUrl))
-                .setDefaultHeaders(new Header[]{
-                        new BasicHeader("Athorization","ApiKey test")
-                })
                 .build();
         ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         this.elasticsearchClient = new ElasticsearchClient(transport);
@@ -51,18 +51,15 @@ public class ElasticClient {
         System.out.println("indexed with version : "+ indexResponse.version());
 
     }
-    public List<Article> findArticleByTitle(String titre) throws IOException {
+    public List<Article> findArticleByMatchingTitle(String titre) throws IOException {
+        MatchQuery matchQuery = new MatchQuery.Builder().field("title").query(titre).build();
         SearchResponse<Article> search = elasticsearchClient
                 .search(s->s
                 .index("article")
-                                .query(q->q
-                                        .term(t->t
-                                                .field("title")
-                                                .value(v-> v.stringValue(titre))))
+                                .query(q->q.match(matchQuery)
+                                        )
                         ,Article.class);
-        System.out.println(" la recherche en toString donne : "+ search.toString());
-        //Sachant que j'ai un document avec le titre  "y a test", le document ressort quand je fais une recherche avec y, a et test mais pas avec y a test
-        //Ce qui laisse penser que je dois faire un enchainement de recherche de value => à voir
+
         List<Article> listeArticle = new ArrayList<>();
         for (Hit<Article> hit: search.hits().hits()) {
             System.out.println(" élément que j'ai obtenue : "+ hit.source());
@@ -97,7 +94,6 @@ public class ElasticClient {
                                             return t;
                                         }))
                         ,Article.class);
-        System.out.println(" la recherche en toString donne : "+ search.toString());
         TotalHits total = search.hits().total();
         List<ArticleDto> articleDtoList = new ArrayList<>();
         boolean isExactResult = total.relation() == TotalHitsRelation.Eq;
@@ -132,6 +128,48 @@ public class ElasticClient {
         List<ArticleDto> articleDtoList = new ArrayList<>();
         boolean isExactResult = total.relation() == TotalHitsRelation.Eq;
         System.out.println("j'obtiens ce boolean pour exact result : "+isExactResult+" en prime je souhaite print ce que total.relation me renvoie "+ total.relation());
+        for (Hit<Article> hit: search.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
+            ArticleDto articleDto = new ArticleDto(hit.source(),hit.score());
+            articleDtoList.add(articleDto );
+        }
+        return articleDtoList;
+    }
+
+    public List<ArticleDto> findArticleByTextV2(String texte) throws IOException {
+        MatchQuery matchQuery = new MatchQuery.Builder().field("texte").query(texte).build();
+        SearchResponse<Article> search = elasticsearchClient
+                .search(s->s
+                                .index("article")
+                                .query(q->q.match(matchQuery))
+                        ,Article.class);
+        List<ArticleDto> articleDtoList = new ArrayList<>();
+        for (Hit<Article> hit: search.hits().hits()) {
+            System.out.println(" élément que j'ai obtenue : "+ hit.source());
+            ArticleDto articleDto = new ArticleDto(hit.source(),hit.score());
+            articleDtoList.add(articleDto );
+        }
+        return articleDtoList;
+    }
+    public List<ArticleDto> findArticleByTextandTitle(String texte,String title) throws IOException {
+        Query matchQueryText = new MatchQuery.Builder().field("texte").query(texte).build()._toQuery();
+        Query matchQueryTitle = new MatchQuery.Builder().field("title").query(title).build()._toQuery();
+        List<Query> test = new ArrayList<>();
+        test.add(matchQueryTitle);
+        test.add(matchQueryText);
+
+        SearchResponse<Article> search = elasticsearchClient
+                .search(s->s
+                                .index("article")
+                                .query(q->{
+                                    q.bool(b->b.must(test));
+
+                                    //q.match(matchQueryText);
+                                    //q.match(matchQueryTitle);
+                                return q;})
+                        ,Article.class);
+        TotalHits total = search.hits().total();
+        List<ArticleDto> articleDtoList = new ArrayList<>();
         for (Hit<Article> hit: search.hits().hits()) {
             System.out.println(" élément que j'ai obtenue : "+ hit.source());
             ArticleDto articleDto = new ArticleDto(hit.source(),hit.score());

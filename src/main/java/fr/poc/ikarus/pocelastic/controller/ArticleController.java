@@ -23,22 +23,9 @@ public class ArticleController {
 
     @Autowired
     private ElasticClient elasticClient ;
-
-    @GetMapping("/{titre}")
-    private ResponseEntity<List<Article>> getArticlesByTitle(@PathVariable("titre") String titre) throws IOException {
-        System.out.println("titre = "+titre);
-        return new ResponseEntity<>(elasticClient.findArticleByTitle(titre), HttpStatus.OK);
-
-    }
     @GetMapping("/")
     private ResponseEntity<List<Article>> getEveryArticle() throws IOException {
         return new ResponseEntity<>(elasticClient.getAllArticles(),HttpStatus.OK);
-    }
-    @GetMapping("/2/{titre}")
-    private ResponseEntity<List<ArticleDto>> getArticlesByTitle2(@PathVariable("titre") String titre) throws IOException {
-        System.out.println("titre = "+titre);
-        return new ResponseEntity<>(elasticClient.findArticleByTitleV2(titre), HttpStatus.OK);
-
     }
     @PostMapping("/")
     private ResponseEntity<String> addArticle(@RequestBody Article article) throws IOException {
@@ -46,10 +33,38 @@ public class ArticleController {
         return new ResponseEntity<>("ajout réussi",HttpStatus.OK);
     }
 
+    @GetMapping("/{titre}")
+    private ResponseEntity<List<Article>> getArticlesByTitle(@PathVariable("titre") String titre) throws IOException {
+        System.out.println("titre = "+titre);
+        return new ResponseEntity<>(elasticClient.findArticleByMatchingTitle(titre), HttpStatus.OK);
+
+    }
+    @GetMapping("/2/{titre}")
+    private ResponseEntity<List<ArticleDto>> getArticlesByTitle2(@PathVariable("titre") String titre) throws IOException {
+        System.out.println("titre = "+titre);
+        return new ResponseEntity<>(elasticClient.findArticleByTitleV2(titre), HttpStatus.OK);
+
+    }
+
+
     @GetMapping("/texte")
     private ResponseEntity<List<ArticleDto>> getArticlesByText(@RequestParam String texte) throws IOException {
         System.out.println("texte = "+texte);
         return new ResponseEntity<>(elasticClient.findArticleByText(texte), HttpStatus.OK);
 
     }
+    @GetMapping("/2/texte")
+    private ResponseEntity<List<ArticleDto>> getArticlesByTextV2(@RequestParam String texte) throws IOException {
+        System.out.println("texte = "+texte);
+        return new ResponseEntity<>(elasticClient.findArticleByTextV2(texte), HttpStatus.OK);
+
+    }
+
+    @GetMapping("/texteandtitle")
+    private ResponseEntity<List<ArticleDto>> getArticlesByTextAndTitle(@RequestParam String texte,@RequestParam String titre) throws IOException {
+        System.out.println("texte = "+texte);
+        return new ResponseEntity<>(elasticClient.findArticleByTextandTitle(texte,titre), HttpStatus.OK);
+
+    }
+
 }
